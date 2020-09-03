@@ -1,0 +1,156 @@
+const path = require('path')
+const HTMLWebpackPlugin = require('html-webpack-plugin')
+const {CleanWebpackPlugin} = require('clean-webpack-plugin')
+const CopyWebpackPlugin = require('copy-webpack-plugin')
+const MiniCssExtractPlugin = require('mini-css-extract-plugin')
+const OptimizeCssAssetsWebpackPlugin = require('optimize-css-assets-webpack-plugin')
+const TerserWebpackPlugin = require('terser-webpack-plugin')
+
+const isDev = process.env.NODE_ENV === 'development'
+const isProd = !isDev;
+const getFilename = ext => isDev ? `[name].${ext}` : `[name].[hash].${ext}`
+
+console.log('IS DEV', isDev)
+
+const optimization = () => {
+    const config = {
+        splitChunks: {
+            chunks: 'all'
+        }
+    }
+
+    if (isProd) {
+        config.minimizer = [
+            new OptimizeCssAssetsWebpackPlugin(),
+            new TerserWebpackPlugin()
+        ]
+    }
+
+    return config;
+}
+
+const cssLoader = extra => {
+    const loaders = [
+        {
+            loader: MiniCssExtractPlugin.loader,
+            options: {
+                hmr: isDev,
+                reloadAll: true
+            }
+        },
+        'css-loader'
+    ]
+
+    if (extra) {
+        loaders.push(extra)
+    }
+
+    return loaders
+}
+
+const babelOptions = preset => {
+    const options = {
+        presets: ['@babel/preset-env'],
+        plugins: ['@babel/plugin-proposal-class-properties']
+    }
+
+    if(preset) {
+        options.presets.push(preset)
+    }
+
+    return options
+}
+
+module.exports = {
+    context: path.resolve(__dirname, 'src'),
+    mode: 'development',
+    entry: {
+        main: ['@babel/polyfill', './index.jsx'],
+        analytics: './analytics'
+    },
+    output: {
+        filename: getFilename('js'),
+        path: path.resolve(__dirname, 'dist')
+    },
+    resolve: {
+        extensions: ['.json', '.js', '.png']
+    },
+    optimization: optimization(),
+    devServer: {
+        port: 8000,
+        hot: isDev
+    },
+    plugins: [
+        new HTMLWebpackPlugin({
+            template: './index.html'
+        }),
+        new CleanWebpackPlugin(),
+        new CopyWebpackPlugin({
+            patterns: [
+                {
+                    from: path.resolve(__dirname, 'src/assets/favicon.ico'),
+                    to: path.resolve(__dirname, 'dist')
+                }
+            ]
+        }),
+        new MiniCssExtractPlugin({
+            filename: getFilename('css')
+        })
+    ],
+    module: {
+        rules: [
+            {
+                test: /\.css$/,
+                use: cssLoader()
+            },
+            {
+                test: /\.less$/,
+                use: cssLoader('less-loader')
+            },
+            {
+                test: /\.s[ac]ss$/,
+                use: cssLoader('sass-loader')
+            },
+            {
+                test: /\.(ttf|wotf|wotf2)$/,
+                use: ['file-loader']
+            },
+            {
+                test: /\.(img|png)$/,
+                use: ['file-loader']
+            },
+            {
+                test: /\.xml$/,
+                use: ['xml-loader']
+            },
+            {
+                test: /\.csv$/,
+                use: ['csv-loader']
+            },
+            {
+                test: /\.js$/,
+                exclude: /node_modules/,
+                loader: {
+                    loader: 'babel-loader',
+                    options: babelOptions()
+                }
+            },
+            {
+                test: /\.ts$/,
+                exclude: /node_modules/,
+                loader: {
+                    loader: 'babel-loader',
+                    options: babelOptions('@babel/preset-react')
+                }
+            },
+            {
+                test: /\.jsx$/,
+                exclude: /node_modules/,
+                loader: {
+                    loader: 'babel-loader',
+                    options: babelOptions('@babel/preset-react')
+                }
+            }
+        ]
+    }
+}

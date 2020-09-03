@@ -1,0 +1,23 @@
+@import "fonts.css";
+
+.container {
+    width: 1000px;
+    margin: auto;
+    text-align: center;
+    font-family: Roboto-Black, sans-serif;
+}
+
+.block {
+    width: 100%;
+    height: 200px;
+    background-image: url("../assets/logo.png");
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.block-json {
+    margin: auto;
+    width: 200px;
+    text-align: left;
+    color: crimson;
+}
